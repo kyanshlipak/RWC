@@ -1,0 +1,38 @@
+echo -e ".venv/\n*.log\n*.csv\n*.dat\n*.tmp\n__pycache__/\n*.pkl\n*.h5\n*.sqlite\n.DS_Store\n.ipynb_checkpoints/\n*.json\n*.yaml\n*.yml\n*.pdf\n*.png\n*.jpg\n*.jpeg\n*.mp4\n*.zip\n*.tar.gz" > .gitignore
+
+# Ignore Python virtual environments
+.venv/
+
+# Ignore compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore log files
+*.log
+
+*.nc
+
+*.ncf
+
+*.shp
+
+*.txt
+*.act
+*.csv
+*.cpg
+*.dbf
+*.prj
+*.shx
+*.pkl
+*.zip
+*.gzip
+*.xml
+*.sbx
+*.atx
+*.sbn
+*.shx
+*.tar
