@@ -3,15 +3,11 @@
 #0. Import RWC data
 #import necessary libraries
 import xarray as xr
-from netCDF4 import Dataset, MFDataset, num2date
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pyproj import Proj
 import geopandas as gpd
 cell_size = 4000
-variables = ['PM25_TOT', "PM10"]
+variables = ['PM25_TOT']
 baseline = xr.open_dataset("avg_201601.nc")
 rwc_2020 = xr.open_dataset("avg_201601_2020_RWC.nc")
 no_rwc = xr.open_dataset("no_rwc_avg_201601.nc")
@@ -132,8 +128,8 @@ grid_gdf = make_grid_gdf()
 
 # add RWC variables to the grid shapefile of CONUS grid
 for var in variables:
-    RWC_var = (rwc_2020[var] - no_rwc[var])[0,0,:,:].to_numpy().ravel()
-    grid_gdf["RWC_"+var] = RWC_var
+    RWC_var = (rwc_2020[var])[0,0,:,:].to_numpy().ravel()
+    grid_gdf[var] = RWC_var
     
 grid_gdf = grid_gdf.reset_index().rename(columns={'index': 'iD'})
 
@@ -154,10 +150,10 @@ def calculate_polygon_area(polygon):
 
 for var in variables:
     intersection['fraction'] = intersection.geometry.area/(cell_size ** 2) # area of intersection / divided by area of gridcell
-    intersection['emissions_per_polygon'] = intersection['RWC_' + var] * intersection['fraction'] # concentration * area of gridcell
+    intersection['emissions_per_polygon'] = intersection[var] * intersection['fraction'] # concentration * area of gridcell
     summed_df = intersection.groupby('GISJOIN')['emissions_per_polygon'].sum().reset_index()
     merged_gdf = merged_gdf.merge(summed_df, on='GISJOIN')
-    merged_gdf['RWC_' + var] = merged_gdf['emissions_per_polygon']/merged_gdf.geometry.area * 1000000
+    merged_gdf[var] = merged_gdf['emissions_per_polygon']/merged_gdf.geometry.area * 1_000_000
     census_tract_gdf = census_tract_gdf.merge(summed_df, on='GISJOIN')
 
-census_tract_gdf.to_file("2020_rwc_census_tract_pm25.shp")
+census_tract_gdf.to_file("2020_tot_census_tract_pm25.shp")
