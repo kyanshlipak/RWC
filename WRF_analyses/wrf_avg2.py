@@ -4,7 +4,7 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from netCDF4 import Dataset
-from wrf import getvar, interplevel, to_np, latlon_coords
+#from wrf import getvar, interplevel, to_np, latlon_coords
 import cartopy.crs as crs
 import cartopy.feature as cfeature
 import xarray as xr
@@ -13,7 +13,7 @@ import xarray as xr
 runname = 'output_CONUS4K_d02_2020_RWC_4km_sf_rrtmg_10_10_1_v3852'
 dirToWRF = f'/projects/b1045/wrf-cmaq/output/CONUS4K/{runname}/'
 filenames_d02 = sorted(glob.glob(os.path.join(dirToWRF, "wrfout_*")))
-variables_of_interest = ['T2', 'Q2', 'U10', 'V10']
+variables_of_interest = ['T2', 'Q2', 'U10', 'V10', 'PSFC']
 
 datasets =[]
 
