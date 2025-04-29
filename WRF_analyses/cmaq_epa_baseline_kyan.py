@@ -205,8 +205,8 @@ for v in range(len(var)):
             print(tmp['State Name'],tmp['County Name'],  epa_lon[i], epa_lat[i], "failed")
 
     # Remove rows where 'Sample Measurement' is zero or negative (invalid values)
-    #final_df.loc[final_df['Sample Measurement'] <= 0] = np.nan  # Remove zeros
-    #final_df.loc[final_df['Sample Measurement'] < 0] = np.nan   # Remove negatives
+    final_df.loc[final_df['Sample Measurement'] <= 0] = np.nan  # Remove zeros
+    final_df.loc[final_df['Sample Measurement'] < 0] = np.nan   # Remove negatives
     
     # Save the combined EPA and CMAQ data to a CSV file
     final_df = pd.concat(dataframes, ignore_index=True)
