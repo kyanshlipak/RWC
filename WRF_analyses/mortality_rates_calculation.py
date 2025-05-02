@@ -1,8 +1,34 @@
+# Description: 
+#   This script analyzes the health impacts of PM2.5 pollution from Residential Wood Combustion (RWC).
+#   It integrates census tract-level pollution data, demographic information, and mortality rates
+#   to estimate attributable mortality using concentration-response functions.
+#
+# Key Functionalities:
+#   1. Processes census tract shapefiles with PM2.5 and demographic data
+#   2. Merges with mortality rate data from BenMAP
+#   3. Aligns age group categories between population and mortality data
+#   4. Calculates baseline mortality rates by census tract
+#   5. Estimates attributable mortality using relative risk functions
+#   6. Performs sensitivity analysis with different relative risk values
+#
+# Input Files:
+#   - Shapefiles: 
+#     * census_tract_data/2020_rwc_census_tract_pm25.shp (PM2.5 and demographic data)
+#     * cbsa/tl_2019_us_cbsa.shp (CBSA boundaries)
+#   - CSV files:
+#     * BenMAP_mortality.csv (Mortality rate data)
+#     * nhgis_ages/nhgis0006_ds244_20195_tract.csv (Population age structure)
+#
+# Outputs:
+#   - Geodataframe with calculated attributable mortality estimates
+#   - Console output of total attributable mortality estimates for different RR values
+#
+# Dependencies:
+#   - pandas, geopandas
+
+
 import pandas as pd
 import geopandas as gpd
-
-# EJ Index csv I was using for some analyses, probably not relevant for others
-EJ_index = pd.read_csv('EJ_index.csv')
 
 
 def import_rwc_shapefile(loc = 'census_tract_data/2016_rwc_census_tract_pm25.shp'):
