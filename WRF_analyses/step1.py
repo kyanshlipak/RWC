@@ -24,32 +24,9 @@ NOAAdataLink="https://www.ncei.noaa.gov/data/local-climatological-data/access/"+
 listOfStationsFile="/projects/b1045/vlang/CMAQ_LCD/lcd-stations.csv" #metadata of stations
 
 # Name of run
-#runname='/daysOfMonthsoutput_BASE_FINAL_fall_1.33km_sf_rrtmg_5_8_1_v3852'
-#BASE_PXLSM_v0
-# Location of WRF output
-#runname='wrf_pure_202108v2'
-#runname='wrf_pure_202202'
-#runname='output_BASE_FINAL_spring_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02 = 'output_BASE_spring_4km_sf_rrtmg_10_8_1_v3852'
-#runname='output_BASE_FINAL_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_BASE_FINAL_4km_sf_rrtmg_10_8_1_v3852'
-#runname='output_BASE_FINAL_wint_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_BASE_FINAL_wint_4km_sf_rrtmg_10_8_1_v3852'
-#runname='output_BASE_FINAL_fall_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_BASE_fall_4km_sf_rrtmg_10_8_1_v3852'
-#runname='output_202202_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_202202_4km_sf_rrtmg_10_8_1_v3852'
-#runname='output_202108_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_202108_4km_sf_rrtmg_10_8_1_v3852'
+#runnamed02='output_CONUS4K_d02_4km_sf_rrtmg_10_10_1_v3852'
+runnamed02='output_CONUS4K_d02_2020_RWC_4km_sf_rrtmg_10_10_1_v3852'
 
-# runname='output_ChicagoLADCO_d03.2018-08_WHbase_1.33km_sf_rrtmg_5_8_1_v3852'
-#runnamed02='output_ChicagoLADCO_d03.2018-08_WHbase_1.33km_sf_rrtmg_5_8_1_v3852'
-runnamed02='output_CONUS4K_d02_4km_sf_rrtmg_10_10_1_v3852'
-
-#dirToWRF_d03='/projects/b1045/wrf-cmaq/output/Chicago_LADCO/output_BASE_FINAL_fall_1.33km_sf_rrtmg_5_8_1_v3852/'
-#dirToWRF_d02='/projects/b1045/wrf-cmaq/output/Chicago_LADCO/output_BASE_fall_4km_sf_rrtmg_10_8_1_v3852/'
-
-# dirToWRF_d03 = '/projects/b1045/wrf-cmaq/output/Chicago_LADCO/'+runname+'/'
 dirToWRF_d02 = '/projects/b1045/wrf-cmaq/output/CONUS4K/'+runnamed02+'/'
 
 listOfStationsFile = "/projects/b1045/vlang/CMAQ_LCD/lcd-stations.csv"
@@ -57,7 +34,7 @@ dirout='/home/ksz4578/Heat_Pump_Project/WRF_analyses/CMAQ_LCD/'+runnamed02+'/'
 grid= 'latlon.nc'  #'latlon_ChicagoLADCO_d03.nc'
 #
 Chatty= True       # false if you want to remove print statements
-written= False    #if the station files have been filtered for d01 and missing links (the function findStations() has previously been run)
+written= True    #if the station files have been filtered for d01 and missing links (the function findStations() has previously been run)
 
 #File out names
 comp_dataset_name = 'wrfcheck_withstations_'+runnamed02+'_'+month+year+'.csv'                     # name and directory to write out to
@@ -99,7 +76,7 @@ def find_index(stn_lon, stn_lat, wrf_lon, wrf_lat):
       abslat = np.abs(wrf_lat-stn_lat[i])
       abslon= np.abs(wrf_lon-stn_lon[i])
       c = np.maximum(abslon,abslat)
-      latlon_idx = (c).min
+      #latlon_idx = np.argmin(c)
       x, y = np.where(c == np.min(c))
       #add indices of nearest wrf point station
       xx.append(x) 
@@ -131,10 +108,9 @@ def getRealData(LCD):
    date_noTime= [LCD['DATE'][z].split('T')[0] for z in range(len(LCD['DATE']))]
    time_noDate=[LCD['DATE'][z].split('T')[1] for z in range(len(LCD['DATE']))]
    UTC_offset=-offset(lon=LCD['LONGITUDE'][0], lat=LCD['LATITUDE'][0])
-#get day before and after for UTC offset sake
-   date_onedaybefore=(dparser.parse(dates[0])-timedelta(days=0)).isoformat().split('T')[0]
-   date_onedayafter=(dparser.parse(dates[-1])+timedelta(days=0)).isoformat().split('T')[0]
-   #print("date_noTime:", date_noTime, "date_onedaybefore", date_onedaybefore, "date_onedayafter", date_onedayafter)
+   #get day before and after for UTC offset sake
+   date_onedaybefore=(dparser.parse(dates[0])-timedelta(days=1)).isoformat().split('T')[0]
+   date_onedayafter=(dparser.parse(dates[-1])+timedelta(days=1)).isoformat().split('T')[0]
    try:
         start_ind_dataset = find(date_noTime, date_onedaybefore)[0]
         end_ind_dataset= find(date_noTime, date_onedayafter)[-1]
@@ -147,85 +123,67 @@ def getRealData(LCD):
    # UTC offset calculator
    # Get the time and round up or round down, also add the UTC offset such that correct time is in UTC
    correctedTime=[];correctedSLP=[]; correctedWindDir=[]; correctedRH=[]; correctedWind =[]; correctedRain=[]; correctedTemp =[];correctedDate=[]
+   # Define a safe value parser
+   def safe_float(val):
+      try:
+         if val == "000":
+            return np.nan
+         val = float(val)
+         if val == 9999:
+               return np.nan
+         return val
+      except:
+         return np.nan
+
    for i in range(len(LCD[start_ind_dataset: end_ind_dataset])):
-      datetimeLCD=dparser.parse(LCD['DATE'][start_ind_dataset+i])
+      datetimeLCD = dparser.parse(LCD['DATE'][start_ind_dataset + i])
       datetimeLCD_UTC = datetimeLCD + timedelta(hours=UTC_offset)
-      try:
-         rainz = float(LCD['HourlyPrecipitation'][start_ind_dataset+i])
-      except ValueError:
-         rainz =float('nan')
-      try:
-         tempz= float(LCD['HourlyDryBulbTemperature'][start_ind_dataset+i])
-      except ValueError:
-         tempz=float('nan')
-      try:
-         slpz= float(LCD['HourlySeaLevelPressure'][start_ind_dataset+i])
-      except ValueError:
-         slpz=float('nan')
-      try:
-         windz= float(LCD['HourlyWindSpeed'][start_ind_dataset+i])
-      except ValueError:
-         windz=float('nan')
-      try:
-         RHz= float(LCD['HourlyRelativeHumidity'][start_ind_dataset+i])
-      except ValueError:
-         RHz=float('nan')
-      try:
-         WindDirz= float(LCD['HourlyWindDirection'][start_ind_dataset+i])
-      except ValueError:
-         WindDirz=float('nan')
-      if datetimeLCD_UTC.minute >= 30:
-            correctedTime.append((datetimeLCD_UTC+timedelta(minutes=60-datetimeLCD_UTC.minute)).isoformat().split('T')[1])
-            correctedDate.append((datetimeLCD_UTC+timedelta(minutes=60-datetimeLCD_UTC.minute)).isoformat().split('T')[0])
-            correctedRain.append(rainz)
-            correctedTemp.append(tempz)
-            correctedSLP.append(slpz)
-            correctedWind.append(windz)
-            correctedRH.append(RHz)
-            correctedWindDir.append(WindDirz)
-      elif datetimeLCD_UTC.minute < 30:
-            correctedTime.append((datetimeLCD_UTC+timedelta(minutes=-datetimeLCD_UTC.minute)).isoformat().split('T')[1])
-            correctedDate.append((datetimeLCD_UTC+timedelta(minutes=-datetimeLCD_UTC.minute)).isoformat().split('T')[0])
-            correctedRain.append(rainz)
-            correctedTemp.append(tempz)
-            correctedSLP.append(slpz)
-            correctedWind.append(windz)
-            correctedRH.append(RHz)
-            correctedWindDir.append(WindDirz)
-      else:
-            correctedTime.append((datetimeLCD_UTC).isoformat().split('T')[1])
-            correctedDate.append((datetimeLCD_UTC).isoformat().split('T')[0])
-            correctedRain.append(rainz)
-            correctedTemp.append(tempz)
-            correctedSLP.append(slpz)
-            correctedWind.append(windz)
-            correctedRH.append(RHz)
-            correctedWindDir.append(WindDirz)
-          
-   #Now filter LCD so that it only uses UTC date times
-   #crop datasets to start at correct first starting date, but leave room at end in case of duplicates
+
+
+      rainz     = safe_float(LCD['HourlyPrecipitation'][start_ind_dataset + i])
+      tempz     = safe_float(LCD['HourlyDryBulbTemperature'][start_ind_dataset + i])
+      slpz      = safe_float(LCD['HourlySeaLevelPressure'][start_ind_dataset + i])
+      windz     = safe_float(LCD['HourlyWindSpeed'][start_ind_dataset + i])  # unit: mph 
+      RHz       = safe_float(LCD['HourlyRelativeHumidity'][start_ind_dataset + i])
+      WindDirz  = safe_float(LCD['HourlyWindDirection'][start_ind_dataset + i])
+      
+      if 50 <= datetimeLCD_UTC.minute < 59:
+         correctedTime.append((datetimeLCD_UTC+timedelta(minutes=60-datetimeLCD_UTC.minute)).isoformat().split('T')[1])
+         correctedDate.append((datetimeLCD_UTC+timedelta(minutes=60-datetimeLCD_UTC.minute)).isoformat().split('T')[0])
+         correctedRain.append(rainz)
+         correctedTemp.append((5/9) * (tempz - 32) + 273.15 if not np.isnan(tempz) else np.nan) #from F --> K
+         correctedSLP.append(slpz)
+         correctedWind.append(windz * 0.44704 if not np.isnan(windz) else np.nan)  #from mph --> m/s
+         correctedRH.append(RHz)
+         correctedWindDir.append(WindDirz)
+
    #Now filter LCD so that it only uses UTC date times
    #crop datasets to start at correct first starting date, but leave room at end in case of duplicates
    try:
         start_ind_dataset2 =  find(correctedDate, dates[0])[0]
         end_ind_dataset2= find(correctedDate, dates[-1])[-1]
    except Exception as e:
-        if (dates[0] not in correctedDate) and (dates[-1] not in correctedDate):
+      try:
+         if (dates[0] not in correctedDate) and (dates[-1] not in correctedDate):
             date_new1 = (dparser.parse(dates[0]) + timedelta(days=1)).isoformat().split('T')[0]
             start_ind_dataset2 =  find(correctedDate, date_new1)[0]
-    
+      
             date_new2 = (dparser.parse(dates[-1]) - timedelta(days=1)).isoformat().split('T')[0]
             end_ind_dataset2 =  find(correctedDate, date_new2)[0]
             
-        elif dates[-1] not in correctedDate:
+         elif dates[-1] not in correctedDate:
             start_ind_dataset2 =  find(correctedDate, dates[0])[0]
             date_new = (dparser.parse(dates[-1]) - timedelta(days=1)).isoformat().split('T')[0]
             end_ind_dataset2 =  find(correctedDate,date_new)[0]
             
-        elif dates[0] not in correctedDate:
+         elif dates[0] not in correctedDate:
             date_new1 = (dparser.parse(dates[0]) + timedelta(days=1)).isoformat().split('T')[0]
             start_ind_dataset2 =  find(correctedDate, date_new1)[0]
             end_ind_dataset2= find(correctedDate, dates[-1])[-1]
+      except Exception as e:
+         if Chatty: print('-> Error in finding start and end indices for LCD data')
+         start_ind_dataset2 = 0
+         end_ind_dataset2 = len(correctedDate)-1
     
    correctedRain=correctedRain[start_ind_dataset2: end_ind_dataset2+1]
    correctedTemp= correctedTemp[start_ind_dataset2: end_ind_dataset2+1]
@@ -243,9 +201,12 @@ def getRealData(LCD):
          j=1; tmpRain, tmpTemp, tmpS, tmpW,tmpWD,tmpRH = [],[],[],[],[],[]
       #try: 
          while i+j < len(correctedTime)-1 and correctedTime[i] == correctedTime[i+j]:
-            tmpTemp.append(correctedTemp[i+j]); tmpRH.append(correctedRH[i+j])
-            tmpRain.append(correctedRain[i+j]); tmpWD.append(correctedWindDir[i+j])
-            tmpS.append(correctedSLP[i+j]); tmpW.append(correctedWind[i+j])
+            if not np.isnan(correctedTemp[i+j]): tmpTemp.append(correctedTemp[i+j])
+            if not np.isnan(correctedRH[i+j]): tmpRH.append(correctedRH[i+j])
+            if not np.isnan(correctedRain[i+j]): tmpRain.append(correctedRain[i+j])
+            if not np.isnan(correctedWindDir[i+j]): tmpWD.append(correctedWindDir[i+j])
+            if not np.isnan(correctedSLP[i+j]): tmpS.append(correctedSLP[i+j])
+            if not np.isnan(correctedWind[i+j]): tmpW.append(correctedWind[i+j])
             j=j+1
          if len(tmpRain) == 0 and len(tmpTemp) == 0 and len(tmpS) == 0 and len(tmpW) == 0:
             correctedRain_noRepeats.append(correctedRain[i]); correctedRH_noRepeats.append(correctedRH[i])
@@ -345,7 +306,8 @@ def findStations():
       x,y= stn_lat[z],stn_lon[z]
       if (checkbounds(x,y,latd02min, lond02min, latd02max, lond02max)):
           in_d02[z]=True
- 
+      # if (checkbounds(x,y,latd03min, lond03min, latd03max, lond03max)):
+      #     in_d03[z]=True        
    # !!!!!!!!!!----------  !!!!!!!!!!----------- !!!!!!!!!!----------- !!!!!!!!!!
    # to write out station list so we don't need to do this again:
    # !!!!!!!!!!----------- !!!!!!!!!!----------- !!!!!!!!!!----------- !!!!!!!!!! 
@@ -354,6 +316,7 @@ def findStations():
    station_out['lat']= stn_lat
    station_out['lon']= stn_lon
    station_out['in_d02']= in_d02
+   #station_out['in_d03']=in_d03
    return station_out
 
 # remove missing files 
@@ -361,7 +324,7 @@ def rm_missing(filenames_d01):
    testrm=[]
    for i in filenames_d01:
       try:
-         test=Dataset(dirToWRF+i)
+         test=Dataset(dirToWRF_d02+i)
       except FileNotFoundError:
          print(i)
          testrm.append(i)
@@ -439,14 +402,7 @@ xx_d01=[]; xx_d02=[]
 # assuming all files with d0# are in the same grid
 print(stn_lon, stn_lat, wrf_lond02, wrf_latd02)
 xx_d02,yy_d02=find_index(stn_lon, stn_lat, wrf_lond02, wrf_latd02)
-#fin = Dataset('/projects/b1045/wrf-cmaq/output/Chicago_LADCO/output_BASE_FINAL_1.33km_sf_rrtmg_5_8_1_v3852/wrfout_d01_2018-08-01_00:00:00')
 
-#f = Dataset('/projects/b1045/wrf-cmaq/output/Chicago_LADCO/output_BASE_FINAL_1.33km_sf_rrtmg_5_8_1_v3852/wrfout_d01_2018-08-01_00:00:00')
-#fin=Dataset('/projects/b1045/wrf-cmaq/output/Chicago_LADCO/output_BASE_FINAL_4km_sf_rrtmg_10_8_1_v3852/wrfout_d01_2018-08-01_00:00:00')
-#xx_d02,yy_d02 =  np.array(ll_to_xy(fin, stn_lat,stn_lon))
-
-# Start pulling station data to compare
-# Output is a list of values for each station
 
 if Chatty: print('-'*70+'\n Starting processing station data \n' + '-'*70)
 
@@ -461,12 +417,20 @@ Date_real=[[] for t in range(len(yy_d02))]
 Time_real=[[] for t in range(len(yy_d02))]
 start_out=time.time(); offsets=[]
 
+#windspeed_zero_perentages = {}
+
 for station in range(len(yy_d02)):
+#for station in range(20):
 #for station in range(int(len(yy_d01)/10)):
    print(station)
    start=time.time()
    LCD = pd.read_csv(NOAAdataLink + stationList[station])
-#new loop
+
+   # windspeed_zero = LCD.loc[LCD['HourlyWindSpeed'] == 0]
+   # print('Percent winddir zero if windspeed zero', windspeed_zero.loc[windspeed_zero['HourlyWindDirection'] == "000"].shape[0]/windspeed_zero.shape[0] * 100 )
+   # windspeed_zero_perentages[stationList[station]] = windspeed_zero.loc[windspeed_zero['HourlyWindDirection'] == "000"].shape[0]/windspeed_zero.shape[0] * 100
+
+   #new loop
    if Chatty: print('-'*70)
    #letemknow
    correctedRain_noRepeats, correctedTemp_noRepeats, dateCorrected_noRepeats,correctedSLP_noRepeats, correctedWind_noRepeats,  correctedWindDir_noRepeats, correctedRH_noRepeats, timeCorrected_noRepeats, UTC_offset = getRealData(LCD)
