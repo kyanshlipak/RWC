@@ -186,3 +186,39 @@ plot_variable(wrf_2020, var_name='T2', title = "Average Simulated CONUS January 
 plot_variable(wrf_2020, var_name='RH', title = "Average Simulated CONUS January Relative Humidity", label = "Relative Humidity (%)", cmap = "magma")     
 plot_variable(wrf_2020, var_name='windspeed', title = "Average Simulated CONUS January Wind Speed", label = "Wind Speed (m/s)", cmap = "magma")  
 plot_variable(wrf_2020, var_name='wind_dir', title = "Average Simulated CONUS January Wind Direction", label = "Wind Direction (°)", cmap = "twilight")  
+
+
+
+
+
+###
+### Plotting Heating Degree Days (HDDs)
+###
+
+
+HDDs = xr.open_dataset('../days_below_50F.nc')
+plot_variable(HDDs, var_name='T2', title = "Simulated CONUS January HDDs (minimum temperature < 50°F)", label = "Number of Heating Degree Days ", cmap = "magma_r")  
+
+import geopandas as gpd
+import pandas as pd
+import xarray as xr
+from shapely.geometry import Point
+
+# Step 1: Read the CBSA shapefile
+cbsa = gpd.read_file('cbsa/tl_2019_us_cbsa.shp', engine="pyogrio")
+
+# Step 2: Assuming HDDs is an xarray Dataset with 'XLAT' and 'XLONG' as coordinates
+# For example, if HDDs is a DataFrame with 'XLAT', 'XLONG', and other relevant columns:
+# If you have HDDs as an xarray, you can convert it to a pandas DataFrame like so:
+hdd_df = HDDs.to_dataframe().reset_index()  # Reset index to have columns 'XLAT', 'XLONG', and others
+
+# Step 3: Create a GeoDataFrame from the HDDs DataFrame
+geometry = [Point(xy) for xy in zip(hdd_df['XLONG'], hdd_df['XLAT'])]
+hdd_gdf = gpd.GeoDataFrame(hdd_df, geometry=geometry)
+
+# Ensure the coordinate reference systems (CRS) match
+# Assuming the CBSA shapefile uses EPSG:4326 (WGS84)
+cbsa = cbsa.to_crs(epsg=4326)
+hdd_gdf = hdd_gdf.set_crs(epsg=4326, allow_override=True)
+
+# Step 4: Perform a spatial join to merge the data
